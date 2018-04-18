@@ -5,7 +5,7 @@ import numpy as np
 import math
 import Main
 import random
-
+from sys import argv
 import Preprocess
 import DetectChars
 import PossiblePlate
@@ -14,6 +14,11 @@ import PossibleChar
 # module level variables ##########################################################################
 PLATE_WIDTH_PADDING_FACTOR = 1.3
 PLATE_HEIGHT_PADDING_FACTOR = 1.5
+
+
+#target = open("out.txt", 'w')
+#target.write(str(i))
+
 
 ###################################################################################################
 def detectPlatesInScene(imgOriginalScene):
@@ -43,7 +48,7 @@ def detectPlatesInScene(imgOriginalScene):
     listOfPossibleCharsInScene = findPossibleCharsInScene(imgThreshScene)
 
     if Main.showSteps == True: # show steps #######################################################
-        print "step 2 - len(listOfPossibleCharsInScene) = " + str(len(listOfPossibleCharsInScene))         # 131 with MCLRNF1 image
+        print ("step 2 - len(listOfPossibleCharsInScene) = " + str(len(listOfPossibleCharsInScene)))         # 131 with MCLRNF1 image
 
         imgContours = np.zeros((height, width, 3), np.uint8)
 
@@ -62,7 +67,7 @@ def detectPlatesInScene(imgOriginalScene):
     listOfListsOfMatchingCharsInScene = DetectChars.findListOfListsOfMatchingChars(listOfPossibleCharsInScene)
 
     if Main.showSteps == True: # show steps #######################################################
-        print "step 3 - listOfListsOfMatchingCharsInScene.Count = " + str(len(listOfListsOfMatchingCharsInScene))    # 13 with MCLRNF1 image
+        print ("step 3 - listOfListsOfMatchingCharsInScene.Count = " + str(len(listOfListsOfMatchingCharsInScene)))    # 13 with MCLRNF1 image
 
         imgContours = np.zeros((height, width, 3), np.uint8)
 
@@ -91,10 +96,10 @@ def detectPlatesInScene(imgOriginalScene):
         # end if
     # end for
 
-    print "\n" + str(len(listOfPossiblePlates)) + " possible plates found"          # 13 with MCLRNF1 image
+    print ("\n" + str(len(listOfPossiblePlates)) + " possible plates found")          # 13 with MCLRNF1 image
 
     if Main.showSteps == True: # show steps #######################################################
-        print "\n"
+        print ("\n")
         cv2.imshow("4a", imgContours)
 
         for i in range(0, len(listOfPossiblePlates)):
@@ -107,13 +112,13 @@ def detectPlatesInScene(imgOriginalScene):
 
             cv2.imshow("4a", imgContours)
 
-            print "possible plate " + str(i) + ", click on any image and press a key to continue . . ."
-
+            print ("possible plate " + str(i) + ", click on any image and press a key to continue . . .")
+            
             cv2.imshow("4b", listOfPossiblePlates[i].imgPlate)
             cv2.waitKey(0)
         # end for
 
-        print "\nplate detection complete, click on any image and press a key to begin char recognition . . .\n"
+        print("\nplate detection complete, click on any image and press a key to begin char recognition . . .\n")
         cv2.waitKey(0)
     # end if # show steps #########################################################################
 
@@ -148,8 +153,8 @@ def findPossibleCharsInScene(imgThresh):
     # end for
 
     if Main.showSteps == True: # show steps #######################################################
-        print "\nstep 2 - len(contours) = " + str(len(contours))                       # 2362 with MCLRNF1 image
-        print "step 2 - intCountOfPossibleChars = " + str(intCountOfPossibleChars)       # 131 with MCLRNF1 image
+        print ("\nstep 2 - len(contours) = " + str(len(contours)))                       # 2362 with MCLRNF1 image
+        print ("step 2 - intCountOfPossibleChars = " + str(intCountOfPossibleChars))       # 131 with MCLRNF1 image
         cv2.imshow("2a", imgContours)
     # end if # show steps #########################################################################
 

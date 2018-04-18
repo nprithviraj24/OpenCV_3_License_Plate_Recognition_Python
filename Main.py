@@ -3,11 +3,16 @@
 import cv2
 import numpy as np
 import os
+import sys
 
 import DetectChars
 import DetectPlates
 import PossiblePlate
-
+from time import gmtime, strftime, sleep
+import json
+import cv2 # opencv3
+from datetime import datetime
+import requests
 # module level variables ##########################################################################
 SCALAR_BLACK = (0.0, 0.0, 0.0)
 SCALAR_WHITE = (255.0, 255.0, 255.0)
@@ -17,66 +22,99 @@ SCALAR_RED = (0.0, 0.0, 255.0)
 
 showSteps = False
 
-###################################################################################################
 def main():
 
     blnKNNTrainingSuccessful = DetectChars.loadKNNDataAndTrainKNN()         # attempt KNN training
 
     if blnKNNTrainingSuccessful == False:                               # if KNN training was not successful
-        print "\nerror: KNN traning was not successful\n"               # show error message
+        print("\nerror: KNN traning was not successful\n")               # show error message
         return                                                          # and exit program
     # end if
+    list1 = ['sample-b.png', 'sample-a.png', 'sample-c.png']
+    for list in list1:
+        imgOriginalScene  = cv2.imread(list)               # open image
 
-    imgOriginalScene  = cv2.imread("1.png")               # open image
+        if imgOriginalScene is None:                            # if image was not read successfully
+            print ("\nerror: image not read from file \n\n")      # print error message to std out
+            os.system("pause")                                  # pause so user can see error message
+            return                                              # and exit program
+        # end if
 
-    if imgOriginalScene is None:                            # if image was not read successfully
-        print "\nerror: image not read from file \n\n"      # print error message to std out
-        os.system("pause")                                  # pause so user can see error message
-        return                                              # and exit program
-    # end if
+        listOfPossiblePlates = DetectPlates.detectPlatesInScene(imgOriginalScene)           # detect plates
 
-    listOfPossiblePlates = DetectPlates.detectPlatesInScene(imgOriginalScene)           # detect plates
+        listOfPossiblePlates = DetectChars.detectCharsInPlates(listOfPossiblePlates)        # detect chars in plates
 
-    listOfPossiblePlates = DetectChars.detectCharsInPlates(listOfPossiblePlates)        # detect chars in plates
+        cv2.imshow("imgOriginalScene", imgOriginalScene)            # show scene image
 
-    cv2.imshow("imgOriginalScene", imgOriginalScene)            # show scene image
-
-    if len(listOfPossiblePlates) == 0:                          # if no plates were found
-        print "\nno license plates were detected\n"             # inform user no plates were found
-    else:                                                       # else
+        if len(listOfPossiblePlates) == 0:                          # if no plates were found
+            print ("\nno license plates were detected\n")             # inform user no plates were found
+        else:                                                       # else
                 # if we get in here list of possible plates has at leat one plate
 
                 # sort the list of possible plates in DESCENDING order (most number of chars to least number of chars)
-        listOfPossiblePlates.sort(key = lambda possiblePlate: len(possiblePlate.strChars), reverse = True)
+            listOfPossiblePlates.sort(key = lambda possiblePlate: len(possiblePlate.strChars), reverse = True)
 
                 # suppose the plate with the most recognized chars (the first plate in sorted by string length descending order) is the actual plate
-        licPlate = listOfPossiblePlates[0]
+            licPlate = listOfPossiblePlates[0]
 
-        cv2.imshow("imgPlate", licPlate.imgPlate)           # show crop of plate and threshold of plate
-        cv2.imshow("imgThresh", licPlate.imgThresh)
+            cv2.imshow("imgPlate", licPlate.imgPlate)           # show crop of plate and threshold of plate
+            cv2.imshow("imgThresh", licPlate.imgThresh)
 
-        if len(licPlate.strChars) == 0:                     # if no chars were found in the plate
-            print "\nno characters were detected\n\n"       # show message
-            return                                          # and exit program
-        # end if
+            if len(licPlate.strChars) == 0:                     # if no chars were found in the plate
+                print ("\nno characters were detected\n\n")       # show message
+                return                                          # and exit program
+            # end if
 
-        drawRedRectangleAroundPlate(imgOriginalScene, licPlate)             # draw red rectangle around plate
+            drawRedRectangleAroundPlate(imgOriginalScene, licPlate)             # draw red rectangle around plate
 
-        print "\nlicense plate read from image = " + licPlate.strChars + "\n"       # write license plate text to std out
-        print "----------------------------------------"
+            print ("\nlicense plate read from image = " + licPlate.strChars + "\n")
+            data = {'license_plate_number': licPlate.strChars, 'timestamp': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ") }
+            # publish_json_with_image(data, 'example.jpg' ,'http://localhost:3000/api/publish_license')
+            # publish_json_with_cv_mat2(data, licPlate.imgThresh, 'http://localhost:3000/api/publish_license', 'afsfsdafdsf')
+            publish_json_with_cv_mat_with_auth(data,imgOriginalScene, 'http://192.41.170.195:3000/api/publish_license', 'twDjXKSO9wwXA0jGYytdNwtt')   
+        
 
-        writeLicensePlateCharsOnImage(imgOriginalScene, licPlate)           # write license plate text on the image
+            target = open('out.txt', 'a')
+            target.write(licPlate.strChars+'\n')
+            target.close()
+            #  write license plate text to std out
+            print ("----------------------------------------")
 
-        cv2.imshow("imgOriginalScene", imgOriginalScene)                # re-show scene image
+            writeLicensePlateCharsOnImage(imgOriginalScene, licPlate)           # write license plate text on the image
 
-        cv2.imwrite("imgOriginalScene.png", imgOriginalScene)           # write image out to file
+            cv2.imshow("imgOriginalScene", imgOriginalScene)                # re-show scene image
+            # publish_json_with_cv_mat_with_auth(data,imgOriginalScene, 'http://192.41.170.195:3000/api/publish_license', 'twDjXKSO9wwXA0jGYytdNwtt')   
+            print "Procedure Done!"
+            # return
+            cv2.imwrite("imgOriginalScene.png", imgOriginalScene)           # write image out to file
+            sleep(10)
+            # end if else
 
-    # end if else
-
-    cv2.waitKey(0)					# hold windows open until user presses a key
+        # cv2.waitKey(0)					# hold windows open until user presses a key
 
     return
 # end main
+class CVMatFile:
+    def __init__(self, mat_img, encoding='.jpg'):
+        self._img = mat_img
+        self._encoding = encoding
+
+    def read(self):
+        _, buffer = cv2.imencode(self._encoding, self._img)
+        return buffer
+
+
+def publish_json_with_cv_mat_with_auth(data, mat_img, url, api_key):
+    files = {
+        'json': (None, json.dumps(data), 'application/json'),
+        'image': ('filename', CVMatFile(mat_img), 'image/jpeg')
+    }
+    req = requests.Request('POST', url, files = files).prepare()
+    req.headers['Authorization'] = 'Token token=' + api_key
+    s = requests.Session()
+    res = s.send(req)
+    print(res.content)
+
 
 ###################################################################################################
 def drawRedRectangleAroundPlate(imgOriginalScene, licPlate):
